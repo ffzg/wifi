@@ -137,8 +137,10 @@ printf $fmt ,"IP","AP", "ch", "rc", "signal", "remote AP","BSS","SSID","Freq","E
 foreach my $m ( sort {
 		## sort by ip
 		#inet_aton($wifi->{$a}->{ip}) cmp inet_aton($wifi->{$b}->{ip})
-		## sort by hostname
-		$ip2name->{ $wifi->{$a}->{ip} } cmp $ip2name->{ $wifi->{$b}->{ip} }
+		## sort by hostname and signal
+		$ip2name->{ $wifi->{$a}->{ip} } cmp $ip2name->{ $wifi->{$b}->{ip} } ||
+		$wifi->{$b}->{sig} <=> $wifi->{$a}->{sig}
+
 	} keys %$wifi ) {
 
 	my $ip = $wifi->{$m}->{ip};
