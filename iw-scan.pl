@@ -134,7 +134,12 @@ printf $fmt ,"IP","AP", "ch", "rc", "signal", "remote AP","BSS","SSID","Freq","E
 
 #warn "# wifi = ",dump($wifi);
 
-foreach my $m ( sort { inet_aton($wifi->{$a}->{ip}) cmp inet_aton($wifi->{$b}->{ip}) } keys %$wifi ) {
+foreach my $m ( sort {
+		## sort by ip
+		#inet_aton($wifi->{$a}->{ip}) cmp inet_aton($wifi->{$b}->{ip})
+		## sort by hostname
+		$ip2name->{ $wifi->{$a}->{ip} } cmp $ip2name->{ $wifi->{$b}->{ip} }
+	} keys %$wifi ) {
 
 	my $ip = $wifi->{$m}->{ip};
 
