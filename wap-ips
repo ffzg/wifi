@@ -1,0 +1,3 @@
+#!/bin/sh -e
+
+grep -A 2 wap /etc/munin/munin.conf | grep -v '^#' | grep address | sed 's/^ *address //' | sort
