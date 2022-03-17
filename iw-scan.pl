@@ -6,6 +6,20 @@ use autodie;
 use Socket qw( inet_aton );
 use Data::Dump qw(dump);
 
+my $name;
+my $ip2name;
+
+open(my $fh, '<', '/etc/munin/munin.conf');
+while(<$fh>) {
+	chomp;
+	if ( m/\[wifi.ffzg;(.+?)\]/ ) {
+		$name = $1;
+	} elsif ( m/address ([0-9\.]+)/ ) {
+		$ip2name->{$1} = $name;
+	}
+}
+
+
 my $mac2ip;
 
 foreach my $file ( glob "out/*ip?addr" ) {
@@ -64,10 +78,15 @@ printf $fmt ,"IP","mac","remote IP","SSID","ch","Freq","Signal","Encryption";
 
 foreach my $m ( sort { inet_aton($wifi->{$a}->{ip}) cmp inet_aton($wifi->{$b}->{ip}) } keys %$wifi ) {
 
+	my $remote_name = '?';
+	if ( exists $mac2ip->{$m} ) {
+		$remote_name = $ip2name->{ $mac2ip->{$m} };
+	}
+
 	printf $fmt,
-		$wifi->{$m}->{ip}, 
+		$ip2name->{ $wifi->{$m}->{ip} }, 
 		$m,
-		$mac2ip->{$m} || '?',
+		$remote_name,
 		$wifi->{$m}->{ssid}, 
 		$wifi->{$m}->{channel} || '?', 
 		$wifi->{$m}->{freq}, 
