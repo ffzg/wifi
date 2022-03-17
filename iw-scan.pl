@@ -24,6 +24,7 @@ while(<$fh>) {
 
 
 my $mac2ip;
+my $ip2macs;
 
 my $addr_len = 0;
 
@@ -31,6 +32,11 @@ foreach my $file ( glob "out/*ip?addr" ) {
 
 	my $macs;
 	my $addr;
+
+	if ( -s $file == 0 ) {
+		warn "ERROR: $file is empty, SKIPPING\n";
+		next;
+	}
 
 	open(my $fh, '<', $file);
 	while(<$fh>) {
@@ -43,9 +49,14 @@ foreach my $file ( glob "out/*ip?addr" ) {
 		}
 	}
 
+	if ( ! $addr ) {
+		die "ERROR: $file didn't include inet address";
+	}
+
 	foreach my $m ( keys %$macs ) {
 		$mac2ip->{$m} = $addr;
 	}
+	$ip2macs->{$addr} = [ keys %$macs ];
 }
 
 
@@ -55,6 +66,12 @@ my $mac;
 my $wifi;
 
 foreach my $file ( sort glob "out/*.iw*scan" ) {
+
+	if ( -s $file == 0 ) {
+		warn "ERROR: $file is empty, SKIPPING\n";
+		next;
+	}
+
 	my $ip = $1 if ( $file =~ m/out\/(.+?)\.iw/ );
 	open(my $fh, '<', $file);
 	while(<$fh>) {
@@ -77,25 +94,71 @@ foreach my $file ( sort glob "out/*.iw*scan" ) {
 	}
 }
 
-my $fmt = "%${name_len}s %-${name_len}s %-20s %2s %4s %-6s %-10s\n";
-printf $fmt ,"IP","remote IP","SSID","ch","Freq","Signal","Encryption";
+my $mac2channel;
+my @ips;
+
+foreach my $file ( sort glob "out/*.iw*dev" ) {
+	if ( -s $file == 0 ) {
+		warn "ERROR: $file is empty, SKIPPING\n";
+		next;
+	}
+	my $ip = $1 if ( $file =~ m/out\/(.+?)\.iw/ );
+	push @ips, $ip;
+	my $mac;
+	open(my $fh, '<', $file);
+	while(<$fh>) {
+		chomp;
+		if ( m/addr ([0-9a-f:]+)/ ) {
+			$mac = $1;
+		} elsif ( m/channel (\d+)/ ) {
+			$mac2channel->{$mac} = $1;
+		}
+	}
+
+}
+
+my $ip2channels;
+foreach my $ip ( @ips ) {
+	foreach my $m ( @{ $ip2macs->{$ip} } ) {
+		if ( exists $mac2channel->{$m} ) {
+			$ip2channels->{$ip}->{ $mac2channel->{$m} }++;
+		}
+	}
+	$ip2channels->{$ip} = [ sort { $a <=> $b } keys %{ $ip2channels->{$ip} } ];
+}
+
+#warn "## ip2channels = ",dump( $ip2channels );
+
+my $fmt = "%${addr_len}s %${name_len}s %2s %-2s %-6s %-${name_len}s %17s %-20s %4s %-10s\n";
+printf $fmt ,"IP","AP", "ch", "rc", "signal", "remote AP","BSS","SSID","Freq","Encryption";
 
 #warn "# wifi = ",dump($wifi);
 
 foreach my $m ( sort { inet_aton($wifi->{$a}->{ip}) cmp inet_aton($wifi->{$b}->{ip}) } keys %$wifi ) {
+
+	my $ip = $wifi->{$m}->{ip};
 
 	my $remote_name = '?';
 	if ( exists $mac2ip->{$m} ) {
 		$remote_name = $ip2name->{ $mac2ip->{$m} };
 	}
 
+	my $remote_channel = 0;
+	$remote_channel = $wifi->{$m}->{channel} if exists $wifi->{$m}->{channel};
+
+	# use local channel from same band as remote one
+	my $channels = $ip2channels->{$ip}->[ $remote_channel > 15 ? 1 : 0 ];
+
 	printf $fmt,
-		$ip2name->{ $wifi->{$m}->{ip} }, 
-		$remote_name,
-		$wifi->{$m}->{ssid}, 
-		$wifi->{$m}->{channel} || '?', 
-		$wifi->{$m}->{freq}, 
+		$ip,
+		$ip2name->{ $ip },
+		$channels,
+		$remote_channel,
 		$wifi->{$m}->{sig}, 
+		$remote_name,
+		$m,
+		$wifi->{$m}->{ssid}, 
+		$wifi->{$m}->{freq}, 
 		$wifi->{$m}->{enc}, 
 	;
 }
