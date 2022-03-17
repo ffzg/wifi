@@ -9,11 +9,14 @@ use Data::Dump qw(dump);
 my $name;
 my $ip2name;
 
+my $name_len = 0;
+
 open(my $fh, '<', '/etc/munin/munin.conf');
 while(<$fh>) {
 	chomp;
 	if ( m/\[wifi.ffzg;(.+?)\]/ ) {
 		$name = $1;
+		$name_len = length($name) if $name_len < length($name);
 	} elsif ( m/address ([0-9\.]+)/ ) {
 		$ip2name->{$1} = $name;
 	}
@@ -21,6 +24,8 @@ while(<$fh>) {
 
 
 my $mac2ip;
+
+my $addr_len = 0;
 
 foreach my $file ( glob "out/*ip?addr" ) {
 
@@ -34,6 +39,7 @@ foreach my $file ( glob "out/*ip?addr" ) {
 			$macs->{$1}++;
 		} elsif ( m/inet ([0-9\.]+)/ ) {
 			$addr = $1;
+			$addr_len = length($addr) if $addr_len < length($addr);
 		}
 	}
 
@@ -71,8 +77,8 @@ foreach my $file ( sort glob "out/*.iw*scan" ) {
 	}
 }
 
-my $fmt = "%15s %17s %15s %-20s %2s %4s %-6s %-10s\n";
-printf $fmt ,"IP","mac","remote IP","SSID","ch","Freq","Signal","Encryption";
+my $fmt = "%${name_len}s %-${name_len}s %-20s %2s %4s %-6s %-10s\n";
+printf $fmt ,"IP","remote IP","SSID","ch","Freq","Signal","Encryption";
 
 #warn "# wifi = ",dump($wifi);
 
@@ -85,7 +91,6 @@ foreach my $m ( sort { inet_aton($wifi->{$a}->{ip}) cmp inet_aton($wifi->{$b}->{
 
 	printf $fmt,
 		$ip2name->{ $wifi->{$m}->{ip} }, 
-		$m,
 		$remote_name,
 		$wifi->{$m}->{ssid}, 
 		$wifi->{$m}->{channel} || '?', 
