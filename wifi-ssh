@@ -1,0 +1,5 @@
+#!/bin/sh
+
+host=$1
+shift
+ssh -q -i /home/dpavlin/wifi/ssh/wifiadmin -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$host $@

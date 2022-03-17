@@ -1,0 +1,6 @@
+#!/bin/sh
+
+./wap-ips | fping -a | while read device ; do
+echo "# $device"
+ssh -i /home/dpavlin/wifi/ssh/wifiadmin -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$device $@ | sed "s/^/$device: /"
+done
