@@ -1,7 +1,8 @@
 #!/bin/sh
 
 if [ -z "$1" ] ; then
-	./wap-ips | parallel -j 75 $0 | tee /dev/shm/wap.guest.list
+	./wap-ips | parallel -j 75 $0 | tee /dev/shm/wap.guest.disabled
+	sort /dev/shm/wap.guest.disabled > out/wap.guest.disabled
 	exit 0
 fi
 
