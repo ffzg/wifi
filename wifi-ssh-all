@@ -1,6 +1,18 @@
-#!/bin/sh
+#!/bin/sh -xe
 
-./wap-ips | fping -a | while read device ; do
-echo "# $device"
-ssh -i /home/dpavlin/wifi/ssh/wifiadmin -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$device $@ | sed "s/^/$device: /"
+alive=/dev/shm/wap.ips.alive
+
+#fping -a $( ./wap-ips ) > $alive || true
+#fping -a $( ./wap-ips ) > $alive || true
+
+cat hosts.wap | awk '{ print $2 }' > $alive
+
+parallel -j $( wc -l $alive | cut -d" " -f1 ) "ssh -q -i /home/dpavlin/wifi/ssh/wifiadmin -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@{} '$@' | sed 's/^/{}:\t/'" < $alive
+
+
+exit 0
+
+cat $alive | while read device ; do
+	echo "# $device"
+	#ssh -i /home/dpavlin/wifi/ssh/wifiadmin -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$device $@ #| sed "s/^/$device: /" || true
 done
