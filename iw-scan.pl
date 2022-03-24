@@ -95,6 +95,7 @@ foreach my $file ( sort glob "out/*.iw*scan" ) {
 }
 
 my $mac2channel;
+my $mac2txpower;
 my @ips;
 
 foreach my $file ( sort glob "out/*.iw*dev" ) {
@@ -112,6 +113,8 @@ foreach my $file ( sort glob "out/*.iw*dev" ) {
 			$mac = $1;
 		} elsif ( m/channel (\d+)/ ) {
 			$mac2channel->{$mac} = $1;
+		} elsif ( m/txpower (\d+)/ ) {
+			$mac2txpower->{$mac} = $1;
 		}
 	}
 
@@ -129,8 +132,8 @@ foreach my $ip ( @ips ) {
 
 #warn "## ip2channels = ",dump( $ip2channels );
 
-my $fmt = "%${addr_len}s %${name_len}s %2s %-2s %-6s %-${name_len}s %17s %-20s %4s %-10s\n";
-printf $fmt ,"IP","AP", "ch", "rc", "signal", "remote AP","BSS","SSID","Freq","Encryption";
+my $fmt = "%${addr_len}s %${name_len}s %2s %2s %2s %-2s %-6s %-${name_len}s %17s %-20s %4s %-10s\n";
+printf $fmt ,"IP","AP", "pw", "ch", "rc", "pw", "signal", "remote AP","BSS","SSID","Freq","Encryption";
 
 #warn "# wifi = ",dump($wifi);
 
@@ -150,6 +153,16 @@ foreach my $m ( sort {
 		$remote_name = $ip2name->{ $mac2ip->{$m} };
 	}
 
+	my $local_power = '';
+	foreach ( @{ $ip2macs->{ $ip } } ) {
+		$local_power = $mac2txpower->{$_} if exists $mac2txpower->{$_};
+	}
+
+	my $remote_power = '';
+	if ( exists $mac2txpower->{$m} ) {
+		$remote_power = $mac2txpower->{$m};
+	}
+
 	my $remote_channel = 0;
 	$remote_channel = $wifi->{$m}->{channel} if exists $wifi->{$m}->{channel};
 
@@ -159,8 +172,10 @@ foreach my $m ( sort {
 	printf $fmt,
 		$ip,
 		$ip2name->{ $ip },
+		$local_power,
 		$channels,
 		$remote_channel,
+		$remote_power,
 		$wifi->{$m}->{sig}, 
 		$remote_name,
 		$m,
