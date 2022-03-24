@@ -132,8 +132,8 @@ foreach my $ip ( @ips ) {
 
 #warn "## ip2channels = ",dump( $ip2channels );
 
-my $fmt = "%${addr_len}s %${name_len}s %2s %2s %2s %-2s %-6s %-${name_len}s %17s %-20s %4s %-10s\n";
-printf $fmt ,"IP","AP", "pw", "ch", "rc", "pw", "signal", "remote AP","BSS","SSID","Freq","Encryption";
+my $fmt = "%${addr_len}s %${name_len}s %2s %2s%s%-2s %-2s %-6s %-${name_len}s %17s %-20s %4s %-10s\n";
+printf $fmt ,"IP","AP", "pw", "ch", '', "rc", "pw", "signal", "remote AP","BSS","SSID","Freq","Encryption";
 
 #warn "# wifi = ",dump($wifi);
 
@@ -167,13 +167,14 @@ foreach my $m ( sort {
 	$remote_channel = $wifi->{$m}->{channel} if exists $wifi->{$m}->{channel};
 
 	# use local channel from same band as remote one
-	my $channels = $ip2channels->{$ip}->[ $remote_channel > 15 ? 1 : 0 ];
+	my $local_channel = $ip2channels->{$ip}->[ $remote_channel > 15 ? 1 : 0 ];
 
 	printf $fmt,
 		$ip,
 		$ip2name->{ $ip },
 		$local_power,
-		$channels,
+		$local_channel,
+		( $local_channel == $remote_channel ? '=' : ' '),
 		$remote_channel,
 		$remote_power,
 		$wifi->{$m}->{sig}, 
