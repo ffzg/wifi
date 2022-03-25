@@ -137,6 +137,9 @@ printf $fmt ,"IP","AP", "pw", "ch", '', "rc", "pw", "signal", "remote AP","BSS",
 
 #warn "# wifi = ",dump($wifi);
 
+open(my $dot, '>', '/tmp/iw-scan.dot');
+print $dot qq|graph {\n|;
+
 foreach my $m ( sort {
 		## sort by ip
 		#inet_aton($wifi->{$a}->{ip}) cmp inet_aton($wifi->{$b}->{ip})
@@ -147,6 +150,8 @@ foreach my $m ( sort {
 	} keys %$wifi ) {
 
 	my $ip = $wifi->{$m}->{ip};
+
+	my $local_name = $ip2name->{ $ip };
 
 	my $remote_name = '?';
 	if ( exists $mac2ip->{$m} ) {
@@ -171,7 +176,7 @@ foreach my $m ( sort {
 
 	printf $fmt,
 		$ip,
-		$ip2name->{ $ip },
+		$local_name,
 		$local_power,
 		$local_channel,
 		( $local_channel == $remote_channel ? '=' : ' '),
@@ -184,5 +189,11 @@ foreach my $m ( sort {
 		$wifi->{$m}->{freq}, 
 		$wifi->{$m}->{enc}, 
 	;
+
+	my $d_len = (abs($wifi->{$m}->{sig}) / 100) * 3;
+	print $dot qq| "$local_name" -- "$remote_name" [ len=$d_len ];\n| if $remote_name ne '?';
+		
 }
 
+print $dot qq|}\n|;
+system "neato -Tsvg /tmp/iw-scan.dot > /var/www/iw-scan.svg";
