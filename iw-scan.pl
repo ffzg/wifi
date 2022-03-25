@@ -194,8 +194,8 @@ foreach my $m ( sort {
 
 	my $d_color =
 		$local_signal > -40 ? 'red'  :
-		$local_signal > -50 ? 'green'  :
-		$local_signal > -60 ? 'cyan' :
+		$local_signal > -50 ? 'green3'  :
+		$local_signal > -60 ? 'green2' :
 		$local_signal > -70 ? 'blue' :
 		$local_signal > -80 ? 'purple' :
 		'grey';
@@ -203,7 +203,7 @@ foreach my $m ( sort {
 	$d_signal =~ s{\.\d+$}{};
 
 	my $d_len = (abs($local_signal) / 100) * 3;
-	print $dot qq| "$local_name" -> "$remote_name" [ len=$d_len; label="$d_signal"; color="$d_color" ];\n| if $remote_name ne '?';
+	print $dot qq| "$local_name" -> "$remote_name" [ len=$d_len; label="$d_signal"; color="$d_color"; fontcolor="$d_color"; ];\n| if $remote_name ne '?';
 		
 }
 
