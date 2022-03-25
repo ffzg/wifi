@@ -138,7 +138,7 @@ printf $fmt ,"IP","AP", "pw", "ch", '', "rc", "pw", "signal", "remote AP","BSS",
 #warn "# wifi = ",dump($wifi);
 
 open(my $dot, '>', '/tmp/iw-scan.dot');
-print $dot qq|graph {\n|;
+print $dot qq|digraph {\n|;
 
 foreach my $m ( sort {
 		## sort by ip
@@ -174,6 +174,8 @@ foreach my $m ( sort {
 	# use local channel from same band as remote one
 	my $local_channel = $ip2channels->{$ip}->[ $remote_channel > 15 ? 1 : 0 ];
 
+	my $local_signal = $wifi->{$m}->{sig};
+
 	printf $fmt,
 		$ip,
 		$local_name,
@@ -182,7 +184,7 @@ foreach my $m ( sort {
 		( $local_channel == $remote_channel ? '=' : ' '),
 		$remote_channel,
 		$remote_power,
-		$wifi->{$m}->{sig}, 
+		$local_signal,
 		$remote_name,
 		$m,
 		$wifi->{$m}->{ssid}, 
@@ -190,10 +192,20 @@ foreach my $m ( sort {
 		$wifi->{$m}->{enc}, 
 	;
 
-	my $d_len = (abs($wifi->{$m}->{sig}) / 100) * 3;
-	print $dot qq| "$local_name" -- "$remote_name" [ len=$d_len ];\n| if $remote_name ne '?';
+	my $d_color =
+		$local_signal > -40 ? 'red'  :
+		$local_signal > -50 ? 'green'  :
+		$local_signal > -60 ? 'cyan' :
+		$local_signal > -70 ? 'blue' :
+		$local_signal > -80 ? 'purple' :
+		'grey';
+	my $d_signal = $local_signal;
+	$d_signal =~ s{\.\d+$}{};
+
+	my $d_len = (abs($local_signal) / 100) * 3;
+	print $dot qq| "$local_name" -> "$remote_name" [ len=$d_len; label="$d_signal"; color="$d_color" ];\n| if $remote_name ne '?';
 		
 }
 
 print $dot qq|}\n|;
-system "neato -Tsvg /tmp/iw-scan.dot > /var/www/iw-scan.svg";
+system "fdp -Tsvg /tmp/iw-scan.dot > /var/www/iw-scan.svg";
