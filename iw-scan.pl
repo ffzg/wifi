@@ -140,6 +140,8 @@ printf $fmt ,"IP","AP", "pw", "ch", '', "rc", "pw", "signal", "remote AP","BSS",
 open(my $dot, '>', '/tmp/iw-scan.dot');
 print $dot qq|digraph {\n|;
 
+my $d_cluster;
+
 foreach my $m ( sort {
 		## sort by ip
 		#inet_aton($wifi->{$a}->{ip}) cmp inet_aton($wifi->{$b}->{ip})
@@ -202,10 +204,32 @@ foreach my $m ( sort {
 	my $d_signal = $local_signal;
 	$d_signal =~ s{\.\d+$}{};
 
-	my $d_len = (abs($local_signal) / 100) * 3;
+	#my $d_len = (abs($local_signal) / 100) * 3;
+	my $d_len = log(abs($local_signal));
+
 	print $dot qq| "$local_name" -> "$remote_name" [ len=$d_len; label="$d_signal"; color="$d_color"; fontcolor="$d_color"; ];\n| if $remote_name ne '?';
-		
+
+	if ( $local_name  =~ m{wap-(\w)\d} || $local_name  =~ m{wap-(\w\w\w)} ) {
+		$d_cluster->{$1}->{$local_name}++;
+	}
+	if ( $remote_name =~ m{wap-(\w)\d} || $remote_name =~ m{wap-(\w\w\w)}) {
+		$d_cluster->{$1}->{$remote_name}++;
+	}
+}
+
+warn "# d_cluster = ",dump( $d_cluster );
+
+foreach my $c ( keys %$d_cluster ) {
+
+	next if scalar keys %{ $d_cluster->{$c} } == 1;
+
+	print $dot qq| subgraph cluster_$c {\n|;
+	foreach my $n ( keys %{ $d_cluster->{$c} } ) {
+		print $dot qq|  "$n";\n|;
+	}
+	print $dot qq| };\n|;
 }
 
 print $dot qq|}\n|;
-system "fdp -Tsvg /tmp/iw-scan.dot > /var/www/iw-scan.svg";
+system "neato -Tsvg /tmp/iw-scan.dot > /var/www/iw-scan-neato.svg";
+system "fdp   -Tsvg /tmp/iw-scan.dot > /var/www/iw-scan-fdp.svg";
