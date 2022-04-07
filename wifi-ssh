@@ -2,4 +2,5 @@
 
 host=$1
 shift
+ping -c 1 $host && \
 ssh -q -i /home/dpavlin/wifi/ssh/wifiadmin -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$host $@
