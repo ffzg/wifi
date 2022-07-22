@@ -7,6 +7,10 @@ fi
 
 if [ -z "$1" ] ; then
 	./wap-ips | parallel -j 75 $0
+	qrencode -o /var/www/wifi/$SSID.png "WIFI:T:WPA;S:$SSID;P:$PASS;;"
+	echo "Created QR code for wifi access:"
+	ls -al /var/www/wifi/$SSID.png
+	echo "http://black.ffzg.hr/wifi/$SSID.png"
 	exit 0
 fi
 
